@@ -11,7 +11,9 @@ NEMTUS release takes the higher of the two plus one patch if needed. See
 
 ## Unreleased
 
-Based on upstream **v1.1.13**.
+## 1.1.13 (2026-11-15)
+
+Based on upstream **v1.1.13**. First NEMTUS release.
 
 - Published as `@nemtus/symbol-bootstrap` (the CLI command is still `symbol-bootstrap`).
 - Supported runtime: Node.js 24 (`engines.node: >=24`).
