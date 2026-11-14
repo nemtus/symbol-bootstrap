@@ -4,6 +4,7 @@ name: CI
 # which are removed by the fork layer — see docs/nemtus-fork.md).
 #
 #   parity  - the NEMTUS fork-layer invariants (.github/scripts/check-nemtus-mirror-invariants.sh)
+#   audit   - npm audit of the production dependency tree (fails on high/critical)
 #   lint    - eslint over src/ and test/
 #   test    - build + the upstream unit suite (needs Docker; uses the upstream symbol-server image)
 #   e2e     - packs the package exactly as it is published, installs it globally with
@@ -47,6 +48,20 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - name: Check NEMTUS fork invariants
         run: bash .github/scripts/check-nemtus-mirror-invariants.sh
+
+  audit:
+    name: npm audit (production dependencies)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Gate on what users install (devDependencies are not shipped). A new advisory turns this red
+      # without any code change — that is the signal to add a patch (see docs/nemtus-fork.md).
+      - run: npm audit --package-lock-only --omit=dev --audit-level=high
 
   lint:
     name: Lint

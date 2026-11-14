@@ -17,5 +17,8 @@ Based on upstream **v1.1.13**.
 - Supported runtime: Node.js 24 (`engines.node: >=24`).
 - Docker Compose V2 support: the `docker compose` plugin is used when available, falling back to the
   legacy `docker-compose` binary; override with `SYMBOL_BOOTSTRAP_DOCKER_COMPOSE`.
+- Security: production dependency tree is free of known vulnerabilities (`npm audit --omit=dev`):
+  `figlet` 1.5.2 → 1.11.4, `js-yaml` → ^4.3.2, and `merkletreejs` (a `symbol-sdk` 2.x dependency)
+  overridden to ^0.4.1, which drops the vulnerable `crypto-js` 3.x / `web3-utils` / `bn.js` chain.
 - Docker images are unchanged from upstream (`symbolplatform/symbol-server:gcc-1.0.3.10`,
   `symbolplatform/symbol-rest:2.5.2`, ...).
