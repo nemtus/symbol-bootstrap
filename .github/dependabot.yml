@@ -1,0 +1,26 @@
+# Dependabot for the NEMTUS maintenance fork.
+#
+# npm: SECURITY UPDATES ONLY. `open-pull-requests-limit: 0` disables routine version bumps (the fork
+# keeps its delta vs upstream minimal; dependency upgrades arrive with upstream syncs), while security
+# updates — which Dependabot derives from the dependency graph — still open PRs. Enable "Dependabot
+# security updates" in Settings -> Code security for them to run.
+#
+# github-actions: version updates on (the workflows are NEMTUS-owned, SHA-pinned per policy), grouped.
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns: ['*']
