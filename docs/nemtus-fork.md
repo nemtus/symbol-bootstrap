@@ -26,9 +26,27 @@ network presets are upstream's. The NEMTUS delta is limited to packaging, CI/rel
 | Docker Compose | spawns `docker-compose` (Compose V1, EOL) | **`docker compose` (V2)**, falling back to `docker-compose`; override with `SYMBOL_BOOTSTRAP_DOCKER_COMPOSE` |
 | CI / release | `build.yml`, `alpha.yml`, `release.yml` (unpinned actions, `NPM_TOKEN`) | removed; **`ci.yml`**, **`publish.yml`** (SHA-pinned, OIDC Trusted Publishing + provenance), **`mirror-sync.yml`** |
 | npm hardening | — | `.npmrc` (`ignore-scripts`, `min-release-age`), Socket Firewall on every CI install |
+| Security patches | — | direct-dependency bumps and `overrides` in `package.json` (see below) |
 | Docker images, presets | `symbolplatform/*` | **unchanged** |
 
 NEMTUS source patches are marked with a `NEMTUS:` comment so they are easy to find in a conflict.
+
+## Security patches
+
+The supported surface is the **production** dependency tree (what `npm install -g` installs).
+`ci.yml` runs `npm audit --omit=dev --audit-level=high` on every PR and push, and `publish.yml` refuses
+to publish with a critical one. When an advisory appears:
+
+1. Prefer a lockfile-only update when the fixed version is inside the declared range.
+2. For a transitive dependency outside the range, add an entry to `overrides` in `package.json` (this
+   keeps the upstream source untouched). Example: `symbol-sdk` 2.x pins `merkletreejs@^0.2`, whose
+   `crypto-js` 3.x / `web3-utils` chain is vulnerable; it is overridden to `^0.4.1`.
+3. For a direct dependency, bump it in `dependencies` (npm rejects an override that contradicts a
+   direct dependency's spec).
+4. Run the unit tests and the e2e, and add a `NEMTUS-CHANGELOG.md` entry.
+
+`symbol-sdk` 2.x itself is end-of-life; migrating to 3.x is a rewrite and out of scope unless an
+unpatchable advisory forces it.
 
 ## Fork invariants
 
