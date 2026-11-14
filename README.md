@@ -1,3 +1,20 @@
+<!-- nemtus-mirror-notice -->
+> [!NOTE]
+> **This is the NEMTUS-maintained fork of [`symbol/symbol-bootstrap`](https://github.com/symbol/symbol-bootstrap),
+> published to npm as [`@nemtus/symbol-bootstrap`](https://www.npmjs.com/package/@nemtus/symbol-bootstrap).**
+> It follows upstream `dev` and keeps using the upstream Docker images; NEMTUS adds only what is needed to keep
+> the tool installable and maintained (Node.js 24 support, Docker Compose V2 support, security patches).
+> The CLI command is unchanged:
+>
+> ```bash
+> npm install -g @nemtus/symbol-bootstrap
+> symbol-bootstrap --help
+> ```
+>
+> The rest of this README is upstream's documentation. See [`docs/nemtus-fork.md`](docs/nemtus-fork.md) for
+> what differs from upstream and how the fork is maintained, and [`NEMTUS-CHANGELOG.md`](NEMTUS-CHANGELOG.md)
+> for NEMTUS releases.
+
 # symbol-bootstrap
 
 Symbol CLI tool that allows you creating, configuring and running [Symbol](https://docs.symbolplatform.com/) blockchain complete networks or nodes to be sync with existing networks.
