@@ -11,6 +11,10 @@ NEMTUS release takes the higher of the two plus one patch if needed. See
 
 ## Unreleased
 
+## 1.1.14 (2026-11-15)
+
+Based on upstream **v1.1.13**. NEMTUS-only compatibility fixes.
+
 - Docker 29 compatibility: the generated `compose.yml` sets `ulimits.nofile` (soft and hard 65536) on the
   MongoDB, server and broker services. Docker 29 lowered the containers' default soft open-file limit to
   1024, which is too low for catapult (RocksDB) and MongoDB. Same values as upstream shoestring; override
