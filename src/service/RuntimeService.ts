@@ -45,8 +45,44 @@ export interface RunImageUsingExecParams {
 export class RuntimeService {
     private static readonly pulledImages: string[] = [];
     private static dockerUserId: string;
+    private static dockerComposeCommand: string[] | undefined;
     public static readonly CURRENT_USER = 'current';
+    public static readonly DOCKER_COMPOSE_ENV = 'SYMBOL_BOOTSTRAP_DOCKER_COMPOSE';
     constructor(private readonly logger: Logger) {}
+
+    /**
+     * NEMTUS: resolves the Docker Compose CLI to use.
+     *
+     * Compose V1 (the standalone `docker-compose` binary) is end-of-life and no longer shipped with Docker, so the
+     * Compose V2 plugin (`docker compose`) is preferred, falling back to `docker-compose` when the plugin is missing.
+     * Set SYMBOL_BOOTSTRAP_DOCKER_COMPOSE (e.g. `docker-compose` or `docker compose`) to force a specific command.
+     *
+     * @returns the command and its leading arguments, e.g. ['docker', 'compose'].
+     */
+    public async getDockerComposeCommand(): Promise<string[]> {
+        if (!RuntimeService.dockerComposeCommand) {
+            const override = process.env[RuntimeService.DOCKER_COMPOSE_ENV]?.trim();
+            if (override) {
+                RuntimeService.dockerComposeCommand = override.split(/\s+/);
+            } else {
+                try {
+                    await this.exec('docker compose version');
+                    RuntimeService.dockerComposeCommand = ['docker', 'compose'];
+                } catch {
+                    RuntimeService.dockerComposeCommand = ['docker-compose'];
+                }
+            }
+            this.logger.debug(`Docker Compose command: ${RuntimeService.dockerComposeCommand.join(' ')}`);
+        }
+        return RuntimeService.dockerComposeCommand;
+    }
+
+    /**
+     * NEMTUS: clears the cached Docker Compose command (used by tests).
+     */
+    public static resetDockerComposeCommand(): void {
+        RuntimeService.dockerComposeCommand = undefined;
+    }
 
     public exec(runCommand: string, ignoreErrors?: boolean): Promise<{ stdout: string; stderr: string }> {
         this.logger.debug(`Exec command: ${runCommand}`);

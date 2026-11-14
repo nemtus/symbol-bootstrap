@@ -71,3 +71,41 @@ describe('RuntimeService', async () => {
         expect(user1).eq(user3);
     });
 });
+
+// NEMTUS: Docker Compose V2 support.
+describe('RuntimeService getDockerComposeCommand', () => {
+    const env = RuntimeService.DOCKER_COMPOSE_ENV;
+    const original = process.env[env];
+    afterEach(() => {
+        if (original === undefined) delete process.env[env];
+        else process.env[env] = original;
+        RuntimeService.resetDockerComposeCommand();
+    });
+
+    it('uses the override env variable', async () => {
+        process.env[env] = ' docker  compose ';
+        RuntimeService.resetDockerComposeCommand();
+        expect(await service.getDockerComposeCommand()).deep.eq(['docker', 'compose']);
+    });
+
+    it('uses the legacy binary when overridden', async () => {
+        process.env[env] = 'docker-compose';
+        RuntimeService.resetDockerComposeCommand();
+        expect(await service.getDockerComposeCommand()).deep.eq(['docker-compose']);
+    });
+
+    it('caches the resolved command', async () => {
+        process.env[env] = 'docker-compose';
+        RuntimeService.resetDockerComposeCommand();
+        await service.getDockerComposeCommand();
+        process.env[env] = 'docker compose';
+        expect(await service.getDockerComposeCommand()).deep.eq(['docker-compose']);
+    });
+
+    it('detects an installed Compose CLI', async () => {
+        delete process.env[env];
+        RuntimeService.resetDockerComposeCommand();
+        const command = await service.getDockerComposeCommand();
+        expect([['docker', 'compose'], ['docker-compose']]).to.deep.include(command);
+    });
+});

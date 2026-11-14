@@ -1,0 +1,113 @@
+name: CI
+
+# NEMTUS gate for nemtus/symbol-bootstrap (replaces upstream's build.yml / alpha.yml / release.yml,
+# which are removed by the fork layer — see docs/nemtus-fork.md).
+#
+#   parity  - the NEMTUS fork-layer invariants (.github/scripts/check-nemtus-mirror-invariants.sh)
+#   lint    - eslint over src/ and test/
+#   test    - build + the upstream unit suite (needs Docker; uses the upstream symbol-server image)
+#   e2e     - packs the package exactly as it is published, installs it globally with
+#             `npm install -g`, and runs a full local network with the `symbol-bootstrap` command
+#             (preset `bootstrap`, upstream Docker images) until the REST gateway reports chain height.
+#
+# Deliberately NOT path-filtered: the jobs are required status checks, and a filtered workflow never
+# reports for a PR outside its filter (e.g. an upstream sync touching only docs), blocking it forever.
+# Also callable (workflow_call) so the publish workflow gates a release on exactly the same checks.
+# Node.js 24 is the supported runtime of the NEMTUS releases (package.json engines: >=24).
+
+'on':
+  pull_request:
+    branches: [dev]
+  push:
+    branches: [dev]
+  workflow_dispatch: {}
+  workflow_call: {}
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 24.x
+  NPM_CONFIG_CACHE: ${{ github.workspace }}/.npm
+
+jobs:
+  parity:
+    name: Fork invariants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Check NEMTUS fork invariants
+        run: bash .github/scripts/check-nemtus-mirror-invariants.sh
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      # Socket Firewall Free blocks confirmed-malicious packages before npm fetches them (npm audit
+      # only knows CVEs). No account/token needed.
+      - uses: SocketDev/action@ba6de6cc0565af1f42295590380973573297e31f # v1.3.2
+        with:
+          mode: firewall-free
+      - run: sfw npm ci
+      - run: npm run lint
+
+  test:
+    name: Build + unit tests (Node.js 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - uses: SocketDev/action@ba6de6cc0565af1f42295590380973573297e31f # v1.3.2
+        with:
+          mode: firewall-free
+      - run: sfw npm ci
+      - run: npm run build
+      - run: npm test
+
+  e2e:
+    name: E2E (npm install -g + local network)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - uses: SocketDev/action@ba6de6cc0565af1f42295590380973573297e31f # v1.3.2
+        with:
+          mode: firewall-free
+      - run: sfw npm ci
+      - name: Pack (as published)
+        run: bash .github/scripts/pack.sh "${RUNNER_TEMP}/pack"
+      - name: Install globally and run a local network
+        run: bash .github/scripts/e2e.sh "$(ls "${RUNNER_TEMP}"/pack/*.tgz)" "${RUNNER_TEMP}/e2e"
+      - name: Container logs (on failure)
+        if: failure()
+        run: |
+          docker ps -a || true
+          for c in $(docker ps -aq); do echo "::group::$(docker inspect -f '{{.Name}}' "$c")"; docker logs --tail 200 "$c" 2>&1 || true; echo '::endgroup::'; done

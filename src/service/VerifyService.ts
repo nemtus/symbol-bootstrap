@@ -108,6 +108,7 @@ export class AppVersionVerifyAction implements VerifyAction {
             header: string;
             version?: string;
             command?: string;
+            commandLoader?: () => Promise<string>;
             recommendationUrl: string;
             expectedVersion: string;
         },
@@ -122,7 +123,10 @@ export class AppVersionVerifyAction implements VerifyAction {
                 if (this.params.command) {
                     return this.service.loadVersionFromCommand(this.params.command);
                 }
-                throw new Error('Either version or command must be provided!');
+                if (this.params.commandLoader) {
+                    return this.service.loadVersionFromCommand(await this.params.commandLoader());
+                }
+                throw new Error('Either version, command or commandLoader must be provided!');
             },
             this.params.header,
             this.params.expectedVersion,
@@ -214,7 +218,7 @@ export class VerifyService {
         this.actions.push(
             new AppVersionVerifyAction(appVersionService, {
                 header: 'Docker Compose Version',
-                command: 'docker-compose --version',
+                commandLoader: async () => `${(await this.runtimeService.getDockerComposeCommand()).join(' ')} version`,
                 recommendationUrl: `https://docs.docker.com/compose/install/`,
                 expectedVersion: this.expectedVersions.dockerCompose,
             }),
