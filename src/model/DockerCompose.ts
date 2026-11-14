@@ -37,6 +37,8 @@ export interface DockerComposeService {
     ports?: string[];
     depends_on?: string[];
     mem_limit?: string | number;
+    // NEMTUS: resource limits, e.g. { nofile: { soft: 65536, hard: 65536 } }.
+    ulimits?: Record<string, number | { soft: number; hard: number }>;
     logging?: DockerComposeServiceLogging;
     // https://docs.docker.com/compose/compose-file/#service-configuration-reference deploy section
     networks?: {

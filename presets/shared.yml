@@ -238,6 +238,9 @@ restSSLKeyFileName: 'restSSL.key'
 restSSLCertificateFileName: 'restSSL.crt'
 restNodeMetadata:
   _info: "Node metadata"
+# NEMTUS: Metal decode endpoint (/metadata/metal/:metalId) of symbol-rest >= 2.4.4; it fails when unset.
+restMetalCacheTtl: 300
+restMetalSizeLimit: 10000000
 nodeWatchPeerLimit: 50
 nodeWatchRestLimit: 10
 

@@ -11,6 +11,10 @@ services:
         working_dir: /docker-entrypoint-initdb.d
         ports:
             - '27017:27017'
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
         volumes:
             - './mongo:/docker-entrypoint-initdb.d:ro'
             - '../databases/db-0:/dbdata:rw'
@@ -25,6 +29,10 @@ services:
         working_dir: /docker-entrypoint-initdb.d
         ports:
             - '27018:27017'
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
         volumes:
             - './mongo:/docker-entrypoint-initdb.d:ro'
             - '../databases/db-1:/dbdata:rw'
@@ -39,6 +47,10 @@ services:
         working_dir: /docker-entrypoint-initdb.d
         ports:
             - '27019:27017'
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
         volumes:
             - './mongo:/docker-entrypoint-initdb.d:ro'
             - '../databases/db-2:/dbdata:rw'
@@ -53,6 +65,10 @@ services:
         working_dir: /docker-entrypoint-initdb.d
         ports:
             - '27020:27017'
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
         volumes:
             - './mongo:/docker-entrypoint-initdb.d:ro'
             - '../databases/db-3:/dbdata:rw'
@@ -67,6 +83,10 @@ services:
         restart: 'on-failure:2'
         ports:
             - '7900:7900'
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
         volumes:
             - '../nodes/peer-node-0:/symbol-workdir:rw'
             - './server:/symbol-commands:ro'
@@ -86,6 +106,10 @@ services:
         restart: 'on-failure:2'
         ports:
             - '7901:7900'
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
         volumes:
             - '../nodes/peer-node-1:/symbol-workdir:rw'
             - './server:/symbol-commands:ro'
@@ -105,6 +129,10 @@ services:
         restart: 'on-failure:2'
         ports:
             - '7902:7900'
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
         volumes:
             - '../nodes/peer-node-2:/symbol-workdir:rw'
             - './server:/symbol-commands:ro'
@@ -122,6 +150,10 @@ services:
         stop_grace_period: 300s
         working_dir: /symbol-workdir
         restart: 'on-failure:2'
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
         volumes:
             - '../nodes/api-node-0:/symbol-workdir:rw'
             - './server:/symbol-commands:ro'
@@ -142,6 +174,10 @@ services:
         stop_grace_period: 300s
         working_dir: /symbol-workdir
         restart: 'on-failure:2'
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
         volumes:
             - '../nodes/api-node-1:/symbol-workdir:rw'
             - './server:/symbol-commands:ro'
@@ -162,6 +198,10 @@ services:
         stop_grace_period: 300s
         working_dir: /symbol-workdir
         restart: 'on-failure:2'
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
         volumes:
             - '../nodes/api-node-2:/symbol-workdir:rw'
             - './server:/symbol-commands:ro'
@@ -182,6 +222,10 @@ services:
         stop_grace_period: 300s
         working_dir: /symbol-workdir
         restart: 'on-failure:2'
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
         volumes:
             - '../nodes/api-node-3:/symbol-workdir:rw'
             - './server:/symbol-commands:ro'
@@ -204,6 +248,10 @@ services:
         stop_signal: SIGINT
         stop_grace_period: 20s
         restart: 'on-failure:2'
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
         volumes:
             - '../nodes/api-node-0:/symbol-workdir:rw'
             - './server:/symbol-commands:ro'
@@ -220,6 +268,10 @@ services:
         stop_signal: SIGINT
         stop_grace_period: 20s
         restart: 'on-failure:2'
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
         volumes:
             - '../nodes/api-node-1:/symbol-workdir:rw'
             - './server:/symbol-commands:ro'
@@ -236,6 +288,10 @@ services:
         stop_signal: SIGINT
         stop_grace_period: 20s
         restart: 'on-failure:2'
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
         volumes:
             - '../nodes/api-node-2:/symbol-workdir:rw'
             - './server:/symbol-commands:ro'
@@ -252,6 +308,10 @@ services:
         stop_signal: SIGINT
         stop_grace_period: 20s
         restart: 'on-failure:2'
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
         volumes:
             - '../nodes/api-node-3:/symbol-workdir:rw'
             - './server:/symbol-commands:ro'

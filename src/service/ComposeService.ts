@@ -139,6 +139,11 @@ export class ComposeService {
             return _.merge({}, service, servicePreset.compose);
         };
 
+        // NEMTUS: Docker 29 lowered the containers' default soft open-file limit to 1024, which is too low for
+        // catapult (RocksDB) and MongoDB. Set soft and hard limits explicitly, as symbol/product's shoestring does.
+        // Override per service with the `compose` (or `brokerCompose`) preset property.
+        const nofileUlimits = { nofile: { soft: 65536, hard: 65536 } };
+
         await Promise.all(
             (presetData.databases || [])
                 .filter((d) => !d.excludeDockerService)
@@ -155,6 +160,7 @@ export class ComposeService {
                             stop_signal: 'SIGINT',
                             working_dir: '/docker-entrypoint-initdb.d',
                             ports: resolvePorts([{ internalPort: databasePort, openPort: n.openPort }]),
+                            ulimits: nofileUlimits,
                             volumes: [
                                 vol(`./mongo`, `/docker-entrypoint-initdb.d`, true),
                                 vol(`../${targetDatabasesFolder}/${n.name}`, '/dbdata', false),
@@ -215,6 +221,7 @@ export class ComposeService {
                             working_dir: nodeWorkingDirectory,
                             restart: restart,
                             ports: resolvePorts(portConfigurations),
+                            ulimits: nofileUlimits,
                             volumes: volumes,
                             depends_on: serverDependsOn,
                             ...this.resolveDebugOptions(presetData.dockerComposeDebugMode, n.dockerComposeDebugMode),
@@ -242,6 +249,7 @@ export class ComposeService {
                                     ports: resolvePorts([{ internalPort: 7902, openPort: n.brokerOpenPort }]),
                                     stop_signal: 'SIGINT',
                                     restart: restart,
+                                    ulimits: nofileUlimits,
                                     volumes: nodeService.volumes,
                                     depends_on: brokerDependsOn,
                                     ...this.resolveDebugOptions(presetData.dockerComposeDebugMode, n.brokerDockerComposeDebugMode),
