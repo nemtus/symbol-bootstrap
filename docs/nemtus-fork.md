@@ -27,7 +27,7 @@ network presets are upstream's. The NEMTUS delta is limited to packaging, CI/rel
 | CI / release | `build.yml`, `alpha.yml`, `release.yml` (unpinned actions, `NPM_TOKEN`) | removed; **`ci.yml`**, **`publish.yml`** (SHA-pinned, OIDC Trusted Publishing + provenance), **`mirror-sync.yml`** |
 | npm hardening | — | `.npmrc` (`ignore-scripts`, `min-release-age`), Socket Firewall on every CI install |
 | Security patches | — | direct-dependency bumps and `overrides` in `package.json` (see below) |
-| Docker images, presets | `symbolplatform/*` | **unchanged** |
+| Docker images, presets | `symbolplatform/*` | **unchanged** by default; tags kept current by `image-watch.yml`, backed up to ghcr.io by `image-backup.yml` |
 
 NEMTUS source patches are marked with a `NEMTUS:` comment so they are easy to find in a conflict.
 
@@ -47,6 +47,49 @@ to publish with a critical one. When an advisory appears:
 
 `symbol-sdk` 2.x itself is end-of-life; migrating to 3.x is a rewrite and out of scope unless an
 unpatchable advisory forces it.
+
+## Docker images: watch and backup
+
+The fork keeps upstream's images (`presets/shared.yml`) but does not depend on upstream to keep them
+current or available.
+
+- **`image-watch.yml`** (Mondays 05:17 UTC + manual) runs `.github/scripts/image-updates.mjs`, which
+  looks for newer Docker Hub tags that are at least 7 days old:
+
+  | Preset key | Image | Proposed when |
+  |---|---|---|
+  | `symbolServerImage` | `symbolplatform/symbol-server` | newer `gcc-X.Y.Z.W` |
+  | `symbolRestImage` | `symbolplatform/symbol-rest` | newer `X.Y.Z`, same major |
+  | `mongoImage` | `mongo` | newer patch of the pinned major.minor (minor/major = data migration, never automatic) |
+  | `httpsPortalImage` | `steveltn/https-portal` | newer `X.Y.Z`, same major |
+
+  If any, it opens (or updates) one PR from the automation-owned branch `nemtus/image-updates` that
+  bumps the preset **and** every test fixture that references the old tag (`test/composes/*.yml`), so
+  the unit suite and the e2e run against the new images. Upstream usually bumps `symbol-server` /
+  `symbol-rest` in its own releases (arriving via mirror-sync): merge such a PR early only when needed
+  (e.g. security), otherwise close it. Explorer/faucet images are upstream alpha builds and not watched.
+
+  Run it locally: `node .github/scripts/image-updates.mjs` (report only) or `--apply`
+  (`MIN_AGE_DAYS=0` to ignore the cooldown).
+
+- **`image-backup.yml`** (on preset changes on `dev`, Mondays 05:47 UTC, manual) copies every image
+  pinned in `presets/shared.yml` to **`ghcr.io/nemtus/symbol-bootstrap-images/<image>:<tag>`**
+  (registry-to-registry, linux/amd64 + linux/arm64; existing backup tags are never overwritten). To run
+  on the backups — e.g. if an image disappears from Docker Hub — override the images in a custom
+  preset:
+
+  ```yaml
+  # custom.yml  (symbol-bootstrap start -p mainnet -a dual -c custom.yml)
+  symbolServerImage: ghcr.io/nemtus/symbol-bootstrap-images/symbol-server:gcc-1.0.3.10
+  symbolRestImage: ghcr.io/nemtus/symbol-bootstrap-images/symbol-rest:2.5.2
+  mongoImage: ghcr.io/nemtus/symbol-bootstrap-images/mongo:7.0.45
+  httpsPortalImage: ghcr.io/nemtus/symbol-bootstrap-images/https-portal:1.25.6
+  ```
+
+  The backup packages must be **public** (Package settings → Change visibility) for anonymous pulls.
+
+Both workflows page Discord (`DISCORD_WEBHOOK_URL`) on failure, and `mirror-sync.yml`'s keepalive
+keeps their schedules from being auto-disabled.
 
 ## Fork invariants
 
@@ -145,10 +188,10 @@ corresponding feature degrades and a NEMTUS patch (or a custom preset) is needed
 
 | Used for | Endpoint (preset) |
 |---|---|
-| Docker images | Docker Hub `symbolplatform/symbol-server`, `symbolplatform/symbol-rest`, `mongo`, `steveltn/https-portal` (`presets/shared.yml`) |
+| Docker images | Docker Hub `symbolplatform/symbol-server`, `symbolplatform/symbol-rest`, `mongo`, `steveltn/https-portal` (`presets/shared.yml`); backups in `ghcr.io/nemtus/symbol-bootstrap-images` |
 | Peer / REST discovery | `nodewatch.symbol.tools` (`presets/{mainnet,testnet}/network.yml`, `nodeWatchUrl`) |
 | Testnet peers | `*.symboltest.net` (`presets/testnet/network.yml`) |
 | Links shown to users | `symbol.fyi`, `testnet.symbol.fyi`, `testnet.symbol.tools` |
 
-Operators can override any image or URL with a custom preset (`-c custom.yml`), e.g.
-`symbolServerImage: ghcr.io/nemtus/catapult-server:<tag>`.
+Operators can override any image or URL with a custom preset (`-c custom.yml`); see the image backups
+above.

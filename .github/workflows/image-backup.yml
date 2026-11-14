@@ -1,0 +1,86 @@
+name: Image backup (ghcr.io)
+
+# NEMTUS: keeps a backup copy of every Docker image pinned in presets/shared.yml under
+#   ghcr.io/nemtus/symbol-bootstrap-images/<image>:<tag>
+# so operators can keep running bootstrap if an image disappears from Docker Hub. The default preset
+# still points at the upstream images; to use a backup, override the image in a custom preset, e.g.
+#   symbolServerImage: ghcr.io/nemtus/symbol-bootstrap-images/symbol-server:gcc-1.0.3.10
+#
+# Copies are registry-to-registry (`docker buildx imagetools create`, no third-party action), limited to
+# linux/amd64 + linux/arm64 (plus their attestations; mongo's Windows variants are dropped). Existing
+# backup tags are never overwritten — a tag is a frozen copy of what the preset pinned at that time.
+# Runs when the preset changes on dev, weekly (to retry/fill gaps), and on demand.
+
+'on':
+  push:
+    branches: [dev]
+    paths: [presets/shared.yml]
+  schedule:
+    - cron: '47 5 * * 1' # Mondays 05:47 UTC (after image-watch)
+  workflow_dispatch: {}
+
+concurrency:
+  group: image-backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Log in to ghcr.io
+        env:
+          TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.actor }}
+        run: printf '%s' "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+      - name: Copy pinned images
+        run: |
+          set -euo pipefail
+          DEST="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/symbol-bootstrap-images"
+          {
+            echo '## Image backups'
+            echo
+            echo '| Source | Backup | Result |'
+            echo '|---|---|---|'
+          } >> "$GITHUB_STEP_SUMMARY"
+          failures=0
+          while read -r src; do
+            name="${src##*/}"          # symbolplatform/symbol-server:gcc-1.0.3.10 -> symbol-server:gcc-1.0.3.10
+            dst="${DEST}/${name}"
+            if docker buildx imagetools inspect "$dst" >/dev/null 2>&1; then
+              result='exists (kept)'
+            elif docker buildx imagetools create -p linux/amd64 -p linux/arm64 --tag "$dst" "docker.io/${src}"; then
+              result='copied'
+            else
+              result='**FAILED**'
+              failures=$((failures + 1))
+            fi
+            echo "${src} -> ${dst}: ${result}"
+            echo "| \`${src}\` | \`${dst}\` | ${result} |" >> "$GITHUB_STEP_SUMMARY"
+          done < <(sed -nE 's/^[A-Za-z]+Image: *([^ #]+).*$/\1/p' presets/shared.yml)
+          [ "$failures" -eq 0 ]
+
+  notify:
+    needs: [backup]
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Notify Discord (image-backup failed)
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -z "${WEBHOOK}" ]; then
+            echo "DISCORD_WEBHOOK_URL not configured; skipping notification."
+            exit 0
+          fi
+          payload="$(jq -n --arg c "[image-backup] ${GITHUB_REPOSITORY} failed: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" '{content: $c}')"
+          curl -fsS -H 'Content-Type: application/json' -d "${payload}" "${WEBHOOK}"

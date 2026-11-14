@@ -219,7 +219,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for wf in mirror-sync.yml; do
+          for wf in mirror-sync.yml image-watch.yml image-backup.yml; do
             gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/${wf}/enable"
           done
 
