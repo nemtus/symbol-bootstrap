@@ -1,0 +1,104 @@
+name: Image watch (Docker Hub)
+
+# NEMTUS: keeps the Docker images pinned in presets/shared.yml current when upstream does not.
+# Weekly, .github/scripts/image-updates.mjs looks for newer Docker Hub tags (symbol-server, symbol-rest,
+# mongo patch releases, https-portal; at least 7 days old) and, if any, opens/updates ONE PR from the
+# automation-owned branch `nemtus/image-updates` that bumps the preset and the test fixtures.
+#
+# Upstream normally bumps symbol-server / symbol-rest itself in a release, and that arrives through
+# mirror-sync. Prefer waiting for that unless the bump is security-relevant (mongo patch releases are
+# the usual case) — if both land, the later merge may conflict on the same lines; keep the higher tag.
+# The PR is opened by github-actions[bot], so its CI waits for "Approve workflows to run".
+
+'on':
+  schedule:
+    - cron: '17 5 * * 1' # Mondays 05:17 UTC
+  workflow_dispatch: {}
+
+concurrency:
+  group: image-watch
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  BRANCH: nemtus/image-updates
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: dev
+          persist-credentials: true
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.x
+      - name: Check Docker Hub and apply updates
+        run: |
+          {
+            echo '## Docker image tags (presets/shared.yml)'
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+          node .github/scripts/image-updates.mjs --apply --json "${RUNNER_TEMP}/updates.json" --summary "${RUNNER_TEMP}/updates.md"
+          cat "${RUNNER_TEMP}/updates.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Open or update the PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # This repo is a fork: pin gh to it (otherwise gh targets the parent symbol/symbol-bootstrap).
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "All watched images are current."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          title="$(node -e '
+            const r = require(process.argv[1]).results.filter((x) => x.next);
+            console.log("Bump Docker images: " + r.map((x) => x.next).join(", "));' "${RUNNER_TEMP}/updates.json")"
+          git checkout -B "$BRANCH"
+          git commit -qam "chore(images): ${title#Bump Docker images: }"
+          # Automation-owned branch: always rebuilt from dev, so force is expected.
+          git push --force origin "$BRANCH"
+          body="$(printf '%s\n' \
+            'Automated by `image-watch.yml`: newer Docker Hub tags (at least 7 days old) for the images pinned in `presets/shared.yml`. The test fixtures under `test/composes/` are updated with the same references.' \
+            '' \
+            "$(cat "${RUNNER_TEMP}/updates.md")" \
+            '' \
+            'Before merging:' \
+            '- `symbol-server` / `symbol-rest`: upstream usually ships these in its own release (arriving via mirror-sync). Merge early only if the bump is needed (e.g. security); otherwise close and let upstream lead.' \
+            '- Review the release notes of each image; `mongo` is limited to patch releases of the pinned major.minor.' \
+            '- Add a `NEMTUS-CHANGELOG.md` entry in the release PR.' \
+            '' \
+            'CI (incl. the e2e local network on the new images) waits for **Approve workflows to run**.')"
+          pr="$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$pr" ]; then
+            gh pr edit "$pr" --title "$title" --body "$body"
+            echo "Updated PR #$pr"
+          else
+            gh pr create --base dev --head "$BRANCH" --title "$title" --body "$body"
+          fi
+
+  notify:
+    needs: [watch]
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Notify Discord (image-watch failed)
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -z "${WEBHOOK}" ]; then
+            echo "DISCORD_WEBHOOK_URL not configured; skipping notification."
+            exit 0
+          fi
+          payload="$(jq -n --arg c "[image-watch] ${GITHUB_REPOSITORY} failed: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" '{content: $c}')"
+          curl -fsS -H 'Content-Type: application/json' -d "${payload}" "${WEBHOOK}"
