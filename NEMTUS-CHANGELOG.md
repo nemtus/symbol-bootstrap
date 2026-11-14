@@ -11,6 +11,20 @@ NEMTUS release takes the higher of the two plus one patch if needed. See
 
 ## Unreleased
 
+- Docker 29 compatibility: the generated `compose.yml` sets `ulimits.nofile` (soft and hard 65536) on the
+  MongoDB, server and broker services. Docker 29 lowered the containers' default soft open-file limit to
+  1024, which is too low for catapult (RocksDB) and MongoDB. Same values as upstream shoestring; override
+  per service with the `compose` / `brokerCompose` preset property.
+- REST: the generated `rest.json` now has the `metal` section required by the Metal decode endpoint
+  (`GET /metadata/metal/:metalId`) of symbol-rest 2.4.4+, which failed without it. New preset properties
+  `restMetalCacheTtl` (default 300) and `restMetalSizeLimit` (default 10000000), matching symbol-rest's
+  defaults.
+- Existing nodes pick up both fixes after regenerating their configuration with `--upgrade` (e.g.
+  `symbol-bootstrap start --upgrade` with the usual flags).
+
+Both issues were identified and first fixed in the community fork
+[nemnesia/symbol-bootstrap](https://github.com/nemnesia/symbol-bootstrap) (thanks to ccHarvestasya).
+
 ## 1.1.13 (2026-11-15)
 
 Based on upstream **v1.1.13**. First NEMTUS release.

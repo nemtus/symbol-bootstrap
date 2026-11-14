@@ -321,6 +321,9 @@ export interface GatewayConfigPreset {
     restExtensions: string;
     restUncirculatingAccountPublicKeys: string;
     restNodeMetadata: Map<string, any>;
+    // NEMTUS: rest.json `metal` section (Metal decode endpoint, symbol-rest >= 2.4.4).
+    restMetalCacheTtl: number;
+    restMetalSizeLimit: number;
     restSSLPath: string;
     restSSLKeyFileName: string;
     restSSLCertificateFileName: string;

@@ -28,6 +28,7 @@ network presets are upstream's. The NEMTUS delta is limited to packaging, CI/rel
 | npm hardening | — | `.npmrc` (`ignore-scripts`, `min-release-age`), Socket Firewall on every CI install |
 | Security patches | — | direct-dependency bumps and `overrides` in `package.json` (see below) |
 | Docker images, presets | `symbolplatform/*` | **unchanged** by default; tags kept current by `image-watch.yml`, backed up to ghcr.io by `image-backup.yml` |
+| Runtime fixes | — | `nofile` ulimits (65536) on the mongo/server/broker services for Docker 29+; `metal` section in the generated `rest.json` (`restMetalCacheTtl` / `restMetalSizeLimit`) |
 
 NEMTUS source patches are marked with a `NEMTUS:` comment so they are easy to find in a conflict.
 
