@@ -257,7 +257,8 @@ export class RunService {
         const dockerFile = join(this.params.target, `docker`, `docker-compose.yml`);
         const dockerComposeArgs = ['-f', dockerFile];
         const args = [...dockerComposeArgs, ...extraArgs];
-        return this.runtimeService.spawn({ command: 'docker-compose', args: args, useLogger: false });
+        const [command, ...composeArgs] = await this.runtimeService.getDockerComposeCommand();
+        return this.runtimeService.spawn({ command, args: [...composeArgs, ...args], useLogger: false });
     }
 
     private async pullImages(dockerCompose: DockerCompose) {
