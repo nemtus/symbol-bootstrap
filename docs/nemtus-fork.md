@@ -186,14 +186,18 @@ upstream release it contains and the images its default preset pins.
 
    ```bash
    git checkout dev && git pull
-   git tag nemtus-v<x.y.z>
+   git tag -m "@nemtus/symbol-bootstrap <x.y.z> (based on upstream v<a.b.c>)" nemtus-v<x.y.z>
    git push origin nemtus-v<x.y.z>
    ```
 
-   The `nemtus-` prefix keeps NEMTUS tags apart from upstream's `v<x.y.z>` tags.
+   The `nemtus-` prefix keeps NEMTUS tags apart from upstream's `v<x.y.z>` tags. Release tags are
+   annotated (and signed where `tag.gpgSign` is set, in which case a tag without `-m` fails with
+   `no tag message?`); the upstream base is the one in the release's [version map](#version-map) row.
 3. `publish.yml` runs: full CI on the tag → pack → **approval** (`npm-production` environment) →
    `npm publish` (OIDC, provenance) → **verify**: `npm install -g @nemtus/symbol-bootstrap@<x.y.z>` from
    the registry and run a local network with the `symbol-bootstrap` command → GitHub Release.
+   If only **verify** fails because the registry did not serve the new version in time, the release
+   itself is done: use "Re-run failed jobs" (`gh run rerun <run-id> --failed`), not a full re-run.
 
 The pack job refuses to publish while `npm audit --omit=dev` reports a **critical** vulnerability.
 

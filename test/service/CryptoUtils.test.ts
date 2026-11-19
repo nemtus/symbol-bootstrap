@@ -154,8 +154,12 @@ describe('CryptoUtils', () => {
         const invalidPassword = '0000';
         const plain = 'abc';
 
-        const salt = randomBytes(16);
-        const iv = randomBytes(16);
+        // NEMTUS: fixed salt/iv instead of randomBytes(16). AES-CBC has no integrity check, so a wrong key
+        // still yields valid PKCS7 padding for about 1 in 256 random salt/iv pairs; the decryption then
+        // "succeeds" with garbage and this test failed at random (~0.4% of runs, which is enough to break a
+        // release pipeline). This vector is one for which the wrong password is rejected.
+        const salt = Buffer.alloc(16, 0x11);
+        const iv = Buffer.alloc(16, 0x22);
         const key = pbkdf2Sync(Buffer.from(password, 'utf8'), salt, 1024, 32, 'sha1');
         const cipher = createCipheriv('aes-256-cbc', key, iv);
         let ciphertext = cipher.update(plain, 'utf8', 'base64');
