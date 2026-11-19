@@ -104,7 +104,8 @@ bash .github/scripts/check-nemtus-mirror-invariants.sh
 It checks the package identity (name, repository, publishConfig, `bin`/`oclif.bin` unchanged,
 `engines`), that `package-lock.json` agrees with `package.json`, that upstream's publish workflows stay
 removed and no workflow uses `NPM_TOKEN`, that every action is SHA-pinned, that the Docker Compose V2
-patch is in place, and that the README carries the fork notice.
+patch is in place, that the README carries the fork notice, and that the [version map](#version-map)
+is well-formed.
 
 ## Following upstream
 
@@ -146,10 +147,40 @@ Sync PRs are opened by `github-actions[bot]`, so their CI runs wait for **"Appro
 - Prerelease suffixes such as `1.1.13-nemtus.1` are **not** used: semver orders them *before* `1.1.13`,
   so `^`/`~` ranges would not pick them up.
 
+### Version map
+
+Because of the rules above, **a NEMTUS version number and the same upstream version number are not
+necessarily the same code** (NEMTUS `1.1.14` is upstream `v1.1.13` plus NEMTUS-only fixes, not upstream
+`v1.1.14`). This table is the authoritative mapping: every `@nemtus/symbol-bootstrap` release, the
+upstream release it contains and the images its default preset pins.
+
+<!-- nemtus-version-map:start -->
+| `@nemtus/symbol-bootstrap` | Git tag | Released | Upstream base | `symbol-server` | `symbol-rest` | Notes |
+|---|---|---|---|---|---|---|
+| 1.1.14 | `nemtus-v1.1.14` | 2026-11-15 | v1.1.13 | gcc-1.0.3.10 | 2.5.2 | NEMTUS-only fixes (Docker 29 ulimits, REST `metal` config). Not upstream `v1.1.14`. |
+| 1.1.13 | `nemtus-v1.1.13` | 2026-11-15 | v1.1.13 | gcc-1.0.3.10 | 2.5.2 | First NEMTUS release. |
+<!-- nemtus-version-map:end -->
+
+- To find the NEMTUS release that contains a given upstream release, take the oldest row whose
+  *Upstream base* is that release or newer. An upstream release with no such row is not released by
+  NEMTUS yet (it may already be merged into `dev`).
+- The table lives in this NEMTUS-owned file, never in upstream's `README.md` / `CHANGELOG.md`, so an
+  upstream merge cannot conflict with it.
+- Add the new row (newest first) in the release PR. `.github/scripts/check-version-map.sh --release`
+  — run by `publish.yml` on the tag — refuses to publish a version that has no row, or whose row
+  disagrees with the tree (upstream base = newest version heading in upstream's `CHANGELOG.md`; images =
+  `presets/shared.yml`). Run the same command on the release PR branch before tagging.
+- On ordinary PRs the `parity` job only checks the table's structure and reports row-level differences
+  as notices. That is deliberate: between releases `dev` is ahead of the last row (a sync PR brings
+  new images, or a higher version, before the next row exists), and failing there would block the
+  automated sync PRs.
+
 ## Releasing
 
 1. Open a PR that sets `version` in `package.json` **and** `package-lock.json` (`npm version <x.y.z>
-   --no-git-tag-version`) and moves the `Unreleased` entry in `NEMTUS-CHANGELOG.md` under the version.
+   --no-git-tag-version`), moves the `Unreleased` entry in `NEMTUS-CHANGELOG.md` under the version and
+   adds the release's row to the [version map](#version-map). Check it with
+   `bash .github/scripts/check-version-map.sh --release`.
 2. After it is merged (CI green), tag the merge commit and push the tag:
 
    ```bash

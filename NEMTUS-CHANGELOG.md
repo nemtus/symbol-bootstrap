@@ -7,7 +7,9 @@ it is based on; upstream's own changes are in [`CHANGELOG.md`](CHANGELOG.md).
 Versioning: a NEMTUS release normally carries the upstream version it is based on. A NEMTUS-only fix
 bumps the patch version (and names its upstream base here); when upstream later releases, the next
 NEMTUS release takes the higher of the two plus one patch if needed. See
-[`docs/nemtus-fork.md`](docs/nemtus-fork.md#versioning).
+[`docs/nemtus-fork.md`](docs/nemtus-fork.md#versioning); its
+[version map](docs/nemtus-fork.md#version-map) lists the upstream release and Docker images behind
+every NEMTUS version.
 
 ## Unreleased
 
