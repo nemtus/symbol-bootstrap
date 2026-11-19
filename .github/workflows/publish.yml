@@ -140,12 +140,17 @@ jobs:
       - name: Wait for the registry to serve the new version
         env:
           VERSION: ${{ needs.check-tag.outputs.version }}
+        # A successful `npm publish` is not immediately readable: for 1.1.15 the version appeared about
+        # 5 minutes after the publish job finished, just past the previous 5-minute limit, and failed this
+        # job although the release was fine. Wait up to 20 minutes. If it still times out, re-run this job
+        # only ("Re-run failed jobs") — never the whole run, the version is already published.
         run: |
-          for _ in $(seq 1 30); do
-            npm view "${PACKAGE}@${VERSION}" version && exit 0
+          for _ in $(seq 1 120); do
+            npm view "${PACKAGE}@${VERSION}" version 2>/dev/null && exit 0
             sleep 10
           done
-          echo "::error::${PACKAGE}@${VERSION} not visible on the registry after 5 minutes"; exit 1
+          npm view "${PACKAGE}@${VERSION}" version || true
+          echo "::error::${PACKAGE}@${VERSION} not visible on the registry after 20 minutes"; exit 1
       - name: npm install -g from the registry + local network
         env:
           VERSION: ${{ needs.check-tag.outputs.version }}
