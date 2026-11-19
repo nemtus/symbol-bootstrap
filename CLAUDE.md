@@ -19,6 +19,9 @@ installable and maintained. Upstream Docker images and presets are used as-is. S
   in `NEMTUS-CHANGELOG.md` (never in upstream's `CHANGELOG.md`).
 - **No contributions back to upstream** are planned; do not open PRs against `symbol/symbol-bootstrap`.
 - Release tags are `nemtus-vX.Y.Z` (never `vX.Y.Z`, which is upstream's namespace).
+- NEMTUS and upstream version numbers diverge (NEMTUS `1.1.14` is not upstream `v1.1.14`). Every release
+  PR adds a row to the version map in `docs/nemtus-fork.md`; `publish.yml` refuses a release without a
+  matching row (`bash .github/scripts/check-version-map.sh --release`).
 - Docker image tags in `presets/shared.yml` are bumped only via the `image-watch.yml` PR flow
   (`.github/scripts/image-updates.mjs --apply` also rewrites the `test/composes/` fixtures).
 

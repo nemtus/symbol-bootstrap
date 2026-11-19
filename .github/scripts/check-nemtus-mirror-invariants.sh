@@ -75,6 +75,15 @@ check "VerifyService does not check a hardcoded docker-compose" \
 # 6. The README tells users which package this is.
 check "README.md carries the NEMTUS fork notice" grep -q '<!-- nemtus-mirror-notice -->' README.md
 
+# 7. The NEMTUS version map (docs/nemtus-fork.md) is well-formed. Structure only: whether the row of
+#    the current version matches the tree is enforced at release time (check-version-map.sh --release,
+#    run by publish.yml), not here — a sync PR is legitimately ahead of the last released row.
+if bash .github/scripts/check-version-map.sh; then
+	pass "NEMTUS version map is well-formed"
+else
+	fail "NEMTUS version map is well-formed (see the output above)"
+fi
+
 if [ "$failures" -ne 0 ]; then
 	echo "${failures} invariant(s) FAILED — see docs/nemtus-fork.md"
 	exit 1

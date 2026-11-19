@@ -59,6 +59,10 @@ jobs:
             echo "::error::tag ${TAG} does not match package.json (${pkg_name}@${pkg_version})"; exit 1
           fi
           echo "version=${version}" >> "$GITHUB_OUTPUT"
+      # NEMTUS and upstream version numbers diverge, so every release must be recorded in the version
+      # map (docs/nemtus-fork.md) with the upstream release and images it actually contains.
+      - name: Check the NEMTUS version map row for this release
+        run: bash .github/scripts/check-version-map.sh --release
 
   ci:
     needs: check-tag
