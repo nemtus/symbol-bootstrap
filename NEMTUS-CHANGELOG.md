@@ -13,6 +13,23 @@ every NEMTUS version.
 
 ## Unreleased
 
+## 1.1.15 (2026-11-19)
+
+Based on upstream **v1.1.14** (catapult client 1.0.3.11). This is the NEMTUS release of upstream
+`v1.1.14`; NEMTUS `1.1.14` was a NEMTUS-only release based on upstream `v1.1.13` (see the
+[version map](docs/nemtus-fork.md#version-map)).
+
+- **Required upgrade before the `vrfGammaSubgroupCheck` fork height: mainnet block 5,967,570, testnet
+  block 3,904,683.** Catapult client 1.0.3.11 contains a breaking fork fix that hardens VRF proof
+  verification and VRF key link validation, enforced from that height. Nodes must run the new server
+  image and network configuration before their network reaches it.
+- Server image `symbolplatform/symbol-server:gcc-1.0.3.11` (was `gcc-1.0.3.10`).
+- New network property `vrfGammaSubgroupCheck` in the generated `config-network.properties`, set in the
+  mainnet and testnet presets (custom networks default to `1`).
+- To upgrade an existing node, install this version and regenerate its configuration with `--upgrade`
+  (e.g. `symbol-bootstrap start --upgrade` with the usual flags).
+- Includes the NEMTUS fixes of 1.1.14 (Docker 29 open-file limits, REST `metal` configuration).
+
 ## 1.1.14 (2026-11-15)
 
 Based on upstream **v1.1.13**. NEMTUS-only compatibility fixes.

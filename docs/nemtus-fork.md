@@ -81,7 +81,7 @@ current or available.
 
   ```yaml
   # custom.yml  (symbol-bootstrap start -p mainnet -a dual -c custom.yml)
-  symbolServerImage: ghcr.io/nemtus/symbol-bootstrap-images/symbol-server:gcc-1.0.3.10
+  symbolServerImage: ghcr.io/nemtus/symbol-bootstrap-images/symbol-server:gcc-1.0.3.11
   symbolRestImage: ghcr.io/nemtus/symbol-bootstrap-images/symbol-rest:2.5.2
   mongoImage: ghcr.io/nemtus/symbol-bootstrap-images/mongo:7.0.45
   httpsPortalImage: ghcr.io/nemtus/symbol-bootstrap-images/https-portal:1.25.6
@@ -157,6 +157,7 @@ upstream release it contains and the images its default preset pins.
 <!-- nemtus-version-map:start -->
 | `@nemtus/symbol-bootstrap` | Git tag | Released | Upstream base | `symbol-server` | `symbol-rest` | Notes |
 |---|---|---|---|---|---|---|
+| 1.1.15 | `nemtus-v1.1.15` | 2026-11-19 | v1.1.14 | gcc-1.0.3.11 | 2.5.2 | Upstream `v1.1.14`: catapult 1.0.3.11, `vrfGammaSubgroupCheck` fork (mainnet 5,967,570 / testnet 3,904,683). |
 | 1.1.14 | `nemtus-v1.1.14` | 2026-11-15 | v1.1.13 | gcc-1.0.3.10 | 2.5.2 | NEMTUS-only fixes (Docker 29 ulimits, REST `metal` config). Not upstream `v1.1.14`. |
 | 1.1.13 | `nemtus-v1.1.13` | 2026-11-15 | v1.1.13 | gcc-1.0.3.10 | 2.5.2 | First NEMTUS release. |
 <!-- nemtus-version-map:end -->
